@@ -43,7 +43,12 @@ if TYPE_CHECKING:
 class Expression(struct.MixedStruct, s_abc.ObjectContainer, s_abc.Expression):
     text = struct.Field(str, frozen=True)
     origtext = struct.Field(str, default=None, frozen=True)
-    refs = struct.Field(so.ObjectSet, coerce=True, default=None, frozen=True)
+    refs = struct.Field(
+        so.ObjectSet,
+        coerce=True,
+        default=None,
+        frozen=True,
+    )
 
     def __init__(self,
                  *args: Any,
@@ -54,7 +59,7 @@ class Expression(struct.MixedStruct, s_abc.ObjectContainer, s_abc.Expression):
         self._qlast = _qlast
         self._irast = _irast
 
-    def __getstate__(self) -> Dict[str, Optional[str]]:
+    def __getstate__(self) -> Dict[str, Any]:
         return {
             'text': self.text,
             'origtext': self.origtext,
@@ -281,7 +286,7 @@ def imprint_expr_context(
         qltree = copy.copy(qltree)
         qltree.aliases = list(qltree.aliases)
 
-    existing_aliases: Dict[str, str] = {}
+    existing_aliases: Dict[Optional[str], str] = {}
     for alias in qltree.aliases:
         if isinstance(alias, qlast_.ModuleAliasDecl):
             existing_aliases[alias.alias] = alias.module

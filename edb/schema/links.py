@@ -206,8 +206,8 @@ class LinkCommand(lproperties.PropertySourceCommand,
         schema: s_schema.Schema,
         context: sd.CommandContext,
         *,
-        parent_node: Optional[qlast.DDL],
-    ) -> Optional[qlast.DDL]:
+        parent_node: Optional[qlast.DDLOperation] = None,
+    ) -> Optional[qlast.DDLOperation]:
         node = super()._get_ast(schema, context, parent_node=parent_node)
         # __type__ link is special, and while it exists on every object
         # it doesn not have a defined default in the schema (and therefore

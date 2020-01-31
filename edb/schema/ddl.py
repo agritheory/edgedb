@@ -287,7 +287,7 @@ def delta_schemas(
 
 
 def cmd_from_ddl(
-    stmt: qlast.DDL,
+    stmt: qlast.DDLCommand,
     *,
     context: Optional[sd.CommandContext]=None,
     schema: s_schema.Schema,
@@ -295,12 +295,13 @@ def cmd_from_ddl(
     testmode: bool=False
 ) -> sd.Command:
     ddl = s_expr.imprint_expr_context(stmt, modaliases)
+    assert isinstance(ddl, qlast.DDLCommand)
 
     if context is None:
         context = sd.CommandContext(
             schema=schema, modaliases=modaliases, testmode=testmode)
 
-    return sd.Command.from_ast(schema, ddl, context=context)
+    return sd.compile_ddl(schema, ddl, context=context)
 
 
 def compile_migration(
