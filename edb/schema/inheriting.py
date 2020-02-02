@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from edb.schema import referencing as s_referencing
 
 
-class InheritingObjectCommand(sd.ObjectCommand):
+class InheritingObjectCommand(sd.ObjectCommand["InheritingObject"]):
 
     def _create_begin(self,
                       schema: s_schema.Schema,
@@ -291,7 +291,7 @@ class InheritingObjectCommand(sd.ObjectCommand):
         rebase = sd.ObjectCommandMeta.get_command_class(
             RebaseInheritingObject, type(scls))
 
-        alter = sd.ObjectCommandMeta.get_command_class(
+        alter = sd.ObjectCommandMeta.get_command_class_or_die(
             sd.AlterObject, type(scls))
 
         new_bases_coll = so.ObjectList.create(schema, new_bases)
@@ -489,14 +489,14 @@ def delta_bases(
     return tuple(removed_bases), tuple(added_bases)
 
 
-class AlterInherit(sd.Command, Generic[qlast.ObjectDDL_T]):
+class AlterInherit(sd.Command):
     astnode = qlast.AlterAddInherit, qlast.AlterDropInherit
 
     @classmethod
     def _cmd_tree_from_ast(
         cls,
         schema: s_schema.Schema,
-        astnode: qlast.ObjectDDL_T,
+        astnode: qlast.DDLOperation,
         context: sd.CommandContext,
     ) -> Any:
         # The base changes are handled by AlterNamedObject
@@ -504,8 +504,7 @@ class AlterInherit(sd.Command, Generic[qlast.ObjectDDL_T]):
 
 
 class CreateInheritingObject(InheritingObjectCommand,
-                             sd.CreateObject,
-                             Generic[qlast.ObjectDDL_T]):
+                             sd.CreateObject["InheritingObject"]):
     def _create_begin(
         self,
         schema: s_schema.Schema,
@@ -571,9 +570,9 @@ class CreateInheritingObject(InheritingObjectCommand,
     def _cmd_tree_from_ast(
         cls,
         schema: s_schema.Schema,
-        astnode: qlast.ObjectDDL_T,
+        astnode: qlast.DDLOperation,
         context: sd.CommandContext,
-    ) -> Any:
+    ) -> sd.Command:
         cmd = super()._cmd_tree_from_ast(schema, astnode, context)
 
         bases = cls._classbases_from_ast(schema, astnode, context)
@@ -589,7 +588,7 @@ class CreateInheritingObject(InheritingObjectCommand,
         self,
         schema: s_schema.Schema,
         context: sd.CommandContext,
-        node: qlast.ObjectDDL_T,
+        node: qlast.DDLOperation,
         op: sd.AlterObjectProperty,
     ) -> None:
         if op.property == 'bases':
@@ -663,14 +662,13 @@ class CreateInheritingObject(InheritingObjectCommand,
 
 
 class AlterInheritingObject(InheritingObjectCommand,
-                            sd.AlterObject,
-                            Generic[qlast.ObjectDDL_T]):
+                            sd.AlterObject["InheritingObject"]):
 
     @classmethod
     def _cmd_tree_from_ast(
         cls,
         schema: s_schema.Schema,
-        astnode: qlast.ObjectDDL_T,
+        astnode: qlast.DDLOperation,
         context: sd.CommandContext,
     ) -> Any:
         cmd = super()._cmd_tree_from_ast(schema, astnode, context)
