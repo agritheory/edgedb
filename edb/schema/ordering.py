@@ -43,7 +43,7 @@ def linearize_delta(
 ) -> CommandT:
     """Sort delta operations to dependency order."""
 
-    opmap: Dict[sd.ObjectCommand, List[sd.ObjectCommand]] = {}
+    opmap: Dict[sd.Command, List[sd.Command]] = {}
     strongrefs: Dict[str, str] = {}
 
     for op in delta.get_subcommands():

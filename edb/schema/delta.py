@@ -849,7 +849,7 @@ class DeltaRoot(CommandGroup):
         return schema
 
 
-ObjectCommand_T = TypeVar("ObjectCommand_T", bound="ObjectCommand")
+ObjectCommand_T = TypeVar("ObjectCommand_T", bound="ObjectCommand[so.Object]")
 
 
 class ObjectCommandMeta(CommandMeta):
@@ -937,7 +937,7 @@ class ObjectCommand(
         schema: s_schema.Schema,
         astnode: qlast.ObjectDDL,
         context: CommandContext,
-    ) -> sn.Name:
+    ) -> str:
         objref = astnode.name
         module = context.modaliases.get(objref.module, objref.module)
         if module is None:
@@ -1263,7 +1263,7 @@ class ObjectCommandContext(CommandContextToken[ObjectCommand[so.Object_T]]):
 
 class UnqualifiedObjectCommand(ObjectCommand[so.UnqualifiedObject]):
 
-    classname = struct.Field(str)
+    classname = struct.Field(str)  # type: ignore
 
     @classmethod
     def _classname_from_ast(
@@ -1281,8 +1281,8 @@ class UnqualifiedObjectCommand(ObjectCommand[so.UnqualifiedObject]):
         context: CommandContext,
         *,
         name: Optional[str] = None,
-        default: Union[so.Object, so.NoDefaultT] = so.NoDefault,
-    ) -> so.Object:
+        default: Union[so.UnqualifiedObject, so.NoDefaultT] = so.NoDefault,
+    ) -> so.UnqualifiedObject:
         ...
 
     @overload
@@ -1293,7 +1293,7 @@ class UnqualifiedObjectCommand(ObjectCommand[so.UnqualifiedObject]):
         *,
         name: Optional[str] = None,
         default: None = None,
-    ) -> Optional[so.Object]:
+    ) -> Optional[so.UnqualifiedObject]:
         ...
 
     def get_object(  # NoQA: F811
@@ -1302,8 +1302,9 @@ class UnqualifiedObjectCommand(ObjectCommand[so.UnqualifiedObject]):
         context: CommandContext,
         *,
         name: Optional[str] = None,
-        default: Union[so.Object, so.NoDefaultT, None] = so.NoDefault,
-    ) -> Optional[so.Object]:
+        default: Union[
+            so.UnqualifiedObject, so.NoDefaultT, None] = so.NoDefault,
+    ) -> Optional[so.UnqualifiedObject]:
         metaclass = self.get_schema_metaclass()
         if name is None:
             name = self.classname
@@ -1494,11 +1495,11 @@ class CreateObject(ObjectCommand[so.Object_T], Generic[so.Object_T]):
                                  self.classname)
 
 
-class CreateObjectFragment(ObjectCommand):
+class CreateObjectFragment(ObjectCommand[so.Object]):
     pass
 
 
-class AlterObjectFragment(ObjectCommand):
+class AlterObjectFragment(ObjectCommand[so.Object]):
 
     def apply(
         self,
@@ -1869,7 +1870,7 @@ class DeleteObject(ObjectCommand[so.Object_T], Generic[so.Object_T]):
             )
 
             for op in refcmds:
-                deleted_ref = schema.get(op.classname)
+                deleted_ref: so.Object = schema.get(op.classname)
                 deleted_refs.add(deleted_ref)
 
             # Add implicit Delete commands for any local refs not

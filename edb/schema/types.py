@@ -1718,9 +1718,10 @@ class TypeCommand(sd.ObjectCommand):
             # because they use the type id in the general case,
             # but in the case of an explicit named view, we
             # still want a properly qualified name.
-            classname = sd.ObjectCommand._classname_from_ast(
+            fq_classname = sd.ObjectCommand._classname_from_ast(
                 schema, astnode, context)
-            cmd.classname = classname
+            assert isinstance(fq_classname, s_name.Name)
+            cmd.classname = fq_classname
 
         expr = s_expr.Expression.from_ast(
             view_expr, schema, context.modaliases)

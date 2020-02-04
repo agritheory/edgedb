@@ -154,6 +154,7 @@ class BaseAlias(Clause):
 
 class AliasedExpr(BaseAlias):
     expr: Expr
+    alias: str
 
 
 class ModuleAliasDecl(BaseAlias):
@@ -182,7 +183,7 @@ class BaseSessionReset(BaseSessionCommand):
 
 
 class SessionResetAliasDecl(BaseAlias, BaseSessionReset):
-    pass
+    alias: str
 
 
 class SessionResetModule(BaseSessionReset):
