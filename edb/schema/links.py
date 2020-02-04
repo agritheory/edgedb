@@ -452,7 +452,7 @@ class DeleteLink(LinkCommand, inheriting.DeleteInheritingObject):
     referenced_astnode = qlast.DropConcreteLink
 
     def _canonicalize(self, schema, context, scls):
-        super()._canonicalize(schema, context, scls)
+        commands = super()._canonicalize(schema, context, scls)
 
         target = scls.get_target(schema)
 
@@ -467,5 +467,8 @@ class DeleteLink(LinkCommand, inheriting.DeleteInheritingObject):
                 sd.DeleteObject, type(target))
 
             del_cmd = Cmd(classname=target.get_name(schema))
-            del_cmd._canonicalize(schema, context, target)
-            self.add(del_cmd)
+            subcmds = del_cmd._canonicalize(schema, context, target)
+            del_cmd.update(subcmds)
+            commands.append(del_cmd)
+
+        return commands

@@ -33,14 +33,13 @@ from . import referencing
 
 if TYPE_CHECKING:
     from . import schema as s_schema
-    CommandT = TypeVar("CommandT", bound=sd.Command)
 
 
 def linearize_delta(
-    delta: CommandT,
+    delta: sd.DeltaRoot,
     old_schema: Optional[s_schema.Schema],
     new_schema: s_schema.Schema
-) -> CommandT:
+) -> sd.DeltaRoot:
     """Sort delta operations to dependency order."""
 
     opmap: Dict[sd.Command, List[sd.Command]] = {}
@@ -166,15 +165,8 @@ def linearize_delta(
 
 
 def _get_parent_op(opstack: List[sd.Command]) -> sd.ObjectCommand:
-    return opstack[1]
-
-    if isinstance(opstack[0], sd.DeltaRoot):
-        parent_op = opstack[1]
-    else:
-        parent_op = opstack[0]
-
+    parent_op = opstack[1]
     assert isinstance(parent_op, sd.ObjectCommand)
-
     return parent_op
 
 

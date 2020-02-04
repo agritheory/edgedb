@@ -637,6 +637,7 @@ class CommandContext:
     ) -> None:
         self.stack: List[CommandContextToken[Command]] = []
         self._cache: Dict[Hashable, Any] = {}
+        self._values: Dict[Hashable, Any] = {}
         self.declarative = declarative
         self.schema = schema
         self._modaliases = modaliases if modaliases is not None else {}
@@ -797,6 +798,12 @@ class CommandContext:
 
     def drop_cache(self, key: Hashable) -> None:
         self._cache.pop(key, None)
+
+    def store_value(self, key: Hashable, value: Any) -> None:
+        self._values[key] = value
+
+    def get_value(self, key: Hashable) -> Any:
+        return self._values.get(key)
 
     def __call__(
         self,
@@ -1843,9 +1850,13 @@ class DeleteObject(ObjectCommand[so.Object_T], Generic[so.Object_T]):
 
         self._validate_legal_command(schema, context)
 
-        if not context.canonical:
-            self._canonicalize(schema, context, self.scls)
-            ordering.linearize_delta(self, schema, schema)
+        if (not context.canonical
+                and not context.get_value(('delcanon', self.scls))):
+            commands = self._canonicalize(schema, context, self.scls)
+            root = DeltaRoot()
+            root.update(commands)
+            root = ordering.linearize_delta(root, schema, schema)
+            self.update(root.get_subcommands())
 
         return schema
 
@@ -1854,8 +1865,9 @@ class DeleteObject(ObjectCommand[so.Object_T], Generic[so.Object_T]):
         schema: s_schema.Schema,
         context: CommandContext,
         scls: so.Object,
-    ) -> None:
+    ) -> Sequence[Command]:
         mcls = self.get_schema_metaclass()
+        commands = []
 
         for refdict in mcls.get_refdicts():
             deleted_refs = set()
@@ -1880,8 +1892,16 @@ class DeleteObject(ObjectCommand[so.Object_T], Generic[so.Object_T]):
                     DeleteObject, type(ref))
 
                 op = del_cmd(classname=ref.get_name(schema))
-                op._canonicalize(schema, context, ref)
-                self.add(op)
+                subcmds = op._canonicalize(schema, context, ref)
+                op.update(subcmds)
+                commands.append(op)
+
+        # Record the fact that DeleteObject._canonicalize
+        # was called on this object to guard against possible
+        # duplicate calls.
+        context.store_value(('delcanon', scls), True)
+
+        return commands
 
     def _delete_innards(
         self,
